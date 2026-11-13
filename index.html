@@ -1,88 +1,69 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>數學快算判斷挑戰</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Google Fonts: Noto Sans TC 與 JetBrains Mono (等寬數字呈現) -->
+    <!-- 引入 Google Fonts: Inter 與 JetBrains Mono (適合清晰顯示數學算式) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f8fafc;
-            color: #0f172a;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            touch-action: manipulation; /* 防止手機雙擊放大 */
         }
-
         .math-font {
-            font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
-            font-variant-numeric: tabular-nums;
+            font-family: 'JetBrains Mono', 'Inter', monospace;
         }
-
-        /* 分數堆疊排版樣式 */
+        /* 分數上下堆疊樣式 */
         .fraction {
             display: inline-flex;
             flex-direction: column;
             align-items: center;
             vertical-align: middle;
-            margin: 0 0.25em;
-            font-size: 0.72em;
-            line-height: 1.15;
+            margin: 0 0.25rem;
+            line-height: 1.05;
+            font-size: 0.8em;
         }
         .fraction .num {
-            border-bottom: 3px solid currentColor;
-            padding: 0 0.3em 0.1em 0.3em;
+            border-bottom: 2.5px solid currentColor;
+            padding: 0 0.3rem 0.15rem;
             width: 100%;
             text-align: center;
         }
         .fraction .den {
-            padding: 0.1em 0.3em 0 0.3em;
+            padding: 0.15rem 0.3rem 0;
             width: 100%;
             text-align: center;
         }
-
-        /* 動畫效果：答對脈衝、答錯震動、浮動分數 */
-        @keyframes pulseGreen {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); border-color: #10b981; }
-            70% { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); border-color: #10b981; }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        /* 動畫效果 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
         }
-
-        @keyframes shakeRed {
-            0%, 100% { transform: translateX(0); border-color: #ef4444; }
-            20%, 60% { transform: translateX(-8px); border-color: #ef4444; }
-            40%, 80% { transform: translateX(8px); border-color: #ef4444; }
+        .animate-shake {
+            animation: shake 0.35s cubic-bezier(.36,.07,.19,.97) both;
         }
-
-        @keyframes floatUpFade {
-            0% { opacity: 1; transform: translate(-50%, 0) scale(0.9); }
-            20% { opacity: 1; transform: translate(-50%, -12px) scale(1.1); }
-            100% { opacity: 0; transform: translate(-50%, -48px) scale(1); }
+        @keyframes popIn {
+            0% { transform: scale(0.92); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
         }
-
-        .anim-correct {
-            animation: pulseGreen 0.45s ease-out;
+        .animate-pop {
+            animation: popIn 0.22s ease-out forwards;
         }
-
-        .anim-wrong {
-            animation: shakeRed 0.4s ease-in-out;
+        @keyframes floatScore {
+            0% { transform: translateY(0) scale(0.9); opacity: 1; }
+            100% { transform: translateY(-38px) scale(1.1); opacity: 0; }
         }
-
-        .floating-score {
-            position: absolute;
-            left: 50%;
-            top: 15%;
-            pointer-events: none;
-            font-weight: 800;
-            animation: floatUpFade 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            z-index: 30;
+        .animate-float-score {
+            animation: floatScore 0.75s ease-out forwards;
         }
-
         /* 按鈕立體按壓感 */
         .btn-tactile {
             transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease;
@@ -92,95 +73,115 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between py-4 px-3 sm:py-6 sm:px-6 bg-slate-100">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-indigo-100">
 
-    <!-- 頂部標題與控制列 -->
-    <header class="w-full max-w-2xl flex flex-col gap-3">
-        <div class="flex flex-wrap items-center justify-between gap-2 bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200/80">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
-                    ±×
+    <!-- 頂部導覽與模式選擇 -->
+    <header class="w-full bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
+                    ±
                 </div>
-                <div>
-                    <h1 class="text-base sm:text-lg font-bold text-slate-800 leading-tight">數學快算判斷挑戰</h1>
-                    <p class="text-xs text-slate-500">判斷算式真偽 · 連對累加 · 連錯倒扣</p>
-                </div>
+                <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-slate-900">數學快算判斷</h1>
             </div>
 
-            <!-- 模式與計時切換 -->
+            <!-- 遊戲模式開關：休閒訓練 vs 60秒限時 -->
             <div class="flex items-center gap-2">
-                <button id="timerToggleBtn" onclick="toggleTimerMode()" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">
+                <button id="timerToggleBtn" onclick="toggleTimerMode()" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 cursor-pointer">
                     <span id="timerIcon">⏱️</span>
-                    <span id="timerModeText">休閒無限時</span>
+                    <span id="timerModeText">訓練模式 (無限時)</span>
                 </button>
-                <button onclick="resetGame()" title="重新開始" class="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <button onclick="resetGame()" title="重新開始" class="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                 </button>
             </div>
         </div>
 
-        <!-- 難度階段選擇標籤 (Tabs) -->
-        <div class="bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200/80 flex overflow-x-auto gap-1 no-scrollbar">
-            <button data-stage="auto" onclick="selectStage('auto')" class="stage-tab flex-1 min-w-[84px] py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-bold transition bg-indigo-600 text-white shadow-sm">
-                自動進階
+        <!-- 題型進階選擇列 -->
+        <div class="max-w-xl mx-auto px-4 pb-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <button data-stage="auto" onclick="selectStage('auto')" class="stage-btn shrink-0 px-3 py-1 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition cursor-pointer">
+                🚀 自動進階
             </button>
-            <button data-stage="1" onclick="selectStage('1')" class="stage-tab flex-1 min-w-[76px] py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-bold transition text-slate-600 hover:bg-slate-100">
-                1. 基礎運算
+            <button data-stage="1" onclick="selectStage('1')" class="stage-btn shrink-0 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition cursor-pointer">
+                1. 基礎四則
             </button>
-            <button data-stage="2" onclick="selectStage('2')" class="stage-tab flex-1 min-w-[76px] py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-bold transition text-slate-600 hover:bg-slate-100">
-                2. 多位數
+            <button data-stage="2" onclick="selectStage('2')" class="stage-btn shrink-0 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition cursor-pointer">
+                2. 多位數計算
             </button>
-            <button data-stage="3" onclick="selectStage('3')" class="stage-tab flex-1 min-w-[76px] py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-bold transition text-slate-600 hover:bg-slate-100">
+            <button data-stage="3" onclick="selectStage('3')" class="stage-btn shrink-0 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition cursor-pointer">
                 3. 小數計算
             </button>
-            <button data-stage="4" onclick="selectStage('4')" class="stage-tab flex-1 min-w-[76px] py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-bold transition text-slate-600 hover:bg-slate-100">
+            <button data-stage="4" onclick="selectStage('4')" class="stage-btn shrink-0 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition cursor-pointer">
                 4. 分數計算
             </button>
         </div>
     </header>
 
-    <!-- 中央遊戲主體區 -->
-    <main class="w-full max-w-2xl flex-1 flex flex-col justify-center my-3 gap-4">
-        
-        <!-- 數據儀表板：當前分數、連擊狀態、最高紀錄 -->
-        <div class="grid grid-cols-3 gap-2.5 sm:gap-4">
+    <!-- 主要遊戲區 -->
+    <main class="w-full max-w-xl mx-auto px-4 py-4 flex-1 flex flex-col justify-center gap-4">
+
+        <!-- 狀態儀表板：分數、連擊狀態、歷史最高紀錄 -->
+        <div class="grid grid-cols-3 gap-2 sm:gap-3">
             <!-- 當前分數 -->
-            <div class="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200/80 flex flex-col items-center justify-center">
-                <span class="text-xs font-medium text-slate-400">目前分數</span>
-                <span id="scoreDisplay" class="math-font text-2xl sm:text-3xl font-extrabold text-slate-800 mt-0.5">0</span>
+            <div class="bg-white rounded-2xl p-3 sm:p-4 shadow-xs border border-slate-200/80 relative overflow-hidden">
+                <div class="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">目前分數</div>
+                <div id="scoreDisplay" class="text-2xl sm:text-3xl font-black text-slate-800 mt-0.5 tabular-nums">0</div>
+                <!-- 浮動得分/扣分提示容器 -->
+                <div id="floatingContainer" class="pointer-events-none absolute top-3 right-3"></div>
             </div>
 
-            <!-- 連擊 / 連錯狀態指示 -->
-            <div id="streakCard" class="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200/80 flex flex-col items-center justify-center transition-colors">
-                <span class="text-xs font-medium text-slate-400">目前狀態</span>
-                <span id="streakDisplay" class="text-sm sm:text-base font-extrabold text-slate-600 mt-1 text-center">準備開始</span>
+            <!-- 連擊倍率與連錯狀態 -->
+            <div id="streakCard" class="bg-white rounded-2xl p-3 sm:p-4 shadow-xs border border-slate-200/80 transition-colors duration-200">
+                <div class="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">連擊狀態</div>
+                <div id="streakDisplay" class="text-base sm:text-lg font-extrabold text-slate-700 mt-1 flex items-center gap-1">
+                    <span>準備開始</span>
+                </div>
             </div>
 
-            <!-- 最高紀錄 / 倒數計時 -->
-            <div class="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200/80 flex flex-col items-center justify-center">
-                <span id="rightStatLabel" class="text-xs font-medium text-slate-400">最高紀錄</span>
-                <span id="rightStatValue" class="math-font text-2xl sm:text-3xl font-extrabold text-amber-500 mt-0.5">0</span>
+            <!-- 限時模式歷史最高分 (永久顯示) -->
+            <div id="highScoreCard" class="bg-white rounded-2xl p-3 sm:p-4 shadow-xs border border-slate-200/80 transition-all duration-300 relative overflow-hidden">
+                <div class="flex items-center justify-between gap-1">
+                    <div id="highScoreTitle" class="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">限時最高紀錄</div>
+                    <button onclick="openResetHighScoreModal()" title="清除最高紀錄" class="text-slate-300 hover:text-rose-500 transition p-0.5 rounded-md cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex items-baseline gap-1.5 mt-0.5">
+                    <div id="highScoreDisplay" class="text-2xl sm:text-3xl font-black text-slate-600 tabular-nums">0</div>
+                    <span id="newRecordBadge" class="hidden text-[10px] font-extrabold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md animate-bounce">
+                        🏆 新紀錄!
+                    </span>
+                </div>
+                <div id="highScoreModeNote" class="text-[10px] font-medium text-slate-400 mt-0.5">訓練模式不計入紀錄</div>
             </div>
         </div>
 
-        <!-- 算式展示主卡片 -->
-        <div id="equationCard" class="relative bg-white rounded-3xl shadow-md border-2 border-slate-200/90 p-6 sm:p-10 flex flex-col items-center justify-center min-h-[220px] sm:min-h-[260px] transition-all">
-            
-            <!-- 浮動得分提示容器 -->
-            <div id="floatingContainer" class="inset-0 pointer-events-none overflow-hidden rounded-3xl"></div>
+        <!-- 限時倒數條 (僅限時模式顯示) -->
+        <div id="timerBanner" class="hidden bg-white rounded-2xl px-4 py-2.5 shadow-xs border border-indigo-100 flex items-center justify-between">
+            <span class="text-xs font-bold text-indigo-700 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+                限時 60 秒挑戰中
+            </span>
+            <span id="timerValueDisplay" class="math-font text-lg font-extrabold text-indigo-600 tabular-nums">60s</span>
+        </div>
 
-            <!-- 頂部標籤：目前關卡等級與本題獎懲預告 -->
-            <div class="w-full flex items-center justify-between text-xs font-bold mb-4">
-                <span id="currentLevelBadge" class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100">
-                    Lv.1 基礎加減乘除
+        <!-- 算式展示卡片 -->
+        <div id="equationCard" class="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200/90 flex flex-col items-center justify-between min-h-[240px] sm:min-h-[270px] relative transition-colors duration-150">
+            
+            <!-- 頂部標籤：當前難度與下一題獎懲預覽 -->
+            <div class="w-full flex items-center justify-between text-xs font-bold">
+                <span id="currentLevelBadge" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600">
+                    Lv.1 基礎四則
                 </span>
                 <div class="flex items-center gap-2">
-                    <span id="nextRewardBadge" class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                    <span id="nextRewardBadge" class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                         答對 +10
                     </span>
-                    <span id="nextPenaltyBadge" class="px-2 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-200/70">
+                    <span id="nextPenaltyBadge" class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/60">
                         答錯歸零
                     </span>
                 </div>
@@ -191,89 +192,148 @@
                 12 + 7 = 19
             </div>
 
+            <!-- 限時模式待命開始覆蓋層 (僅在切換至限時模式或重置限時模式時顯示) -->
+            <div id="timerStandbyOverlay" class="hidden absolute inset-0 bg-white/95 backdrop-blur-xs rounded-3xl flex flex-col items-center justify-center p-6 z-20 text-center">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl mb-2.5">
+                    🔥
+                </div>
+                <h3 class="text-lg sm:text-xl font-black text-slate-800">限時 60 秒挑戰已就緒</h3>
+                <p class="text-xs sm:text-sm text-slate-500 mt-1 mb-5">點擊開始後將立即出題並啟動 60 秒倒數計時</p>
+                <button onclick="startTimedSession()" class="btn-tactile px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-md shadow-indigo-500/20 border-b-4 border-indigo-800 cursor-pointer flex items-center gap-2">
+                    <span>▶</span>
+                    <span>開始挑戰</span>
+                </button>
+            </div>
+
             <!-- 上一題解答回饋提示 (答錯時顯示正確答案幫助學習) -->
-            <div id="feedbackHint" class="h-6 mt-2 text-xs sm:text-sm font-bold text-center transition-opacity opacity-0">
-                <!-- 動態填入提示 -->
+            <div id="feedbackHint" class="h-6 flex items-center justify-center text-xs sm:text-sm font-semibold text-slate-400 transition-opacity duration-200 opacity-0">
+                上一題提示
             </div>
         </div>
 
-        <!-- 操作按鈕區：正確 (O) / 錯誤 (X) -->
-        <div class="grid grid-cols-2 gap-3 sm:gap-5 pt-1">
-            <button id="btnTrue" onclick="handleAnswer(true)" class="btn-tactile group relative bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-2xl py-4 sm:py-5 px-4 shadow-md shadow-emerald-500/20 border-b-4 border-emerald-700 flex flex-col items-center justify-center gap-1 cursor-pointer">
+        <!-- 操作按鈕區：超大觸控按鈕 (O 正確 / X 錯誤) -->
+        <div class="grid grid-cols-2 gap-3 sm:gap-4 mt-1">
+            <!-- 正確 (O) 按鈕 -->
+            <button id="btnTrue" onclick="handleAnswer(true)" class="btn-tactile group bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-2xl py-4 sm:py-5 px-4 shadow-md shadow-emerald-500/20 border-b-4 border-emerald-700 flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
                 <div class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <circle cx="12" cy="12" r="9" />
+                    <svg class="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                     <span class="text-xl sm:text-2xl font-black tracking-wide">正確</span>
                 </div>
-                <span class="text-[11px] sm:text-xs text-emerald-100 font-medium">鍵盤 ← 或 O / Y</span>
+                <span class="text-[11px] font-medium text-emerald-100 opacity-80 hidden sm:inline">鍵盤 ← 或 O</span>
             </button>
 
-            <button id="btnFalse" onclick="handleAnswer(false)" class="btn-tactile group relative bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white rounded-2xl py-4 sm:py-5 px-4 shadow-md shadow-rose-500/20 border-b-4 border-rose-700 flex flex-col items-center justify-center gap-1 cursor-pointer">
+            <!-- 錯誤 (X) 按鈕 -->
+            <button id="btnFalse" onclick="handleAnswer(false)" class="btn-tactile group bg-rose-500 hover:bg-rose-600 active:bg-rose-700 text-white rounded-2xl py-4 sm:py-5 px-4 shadow-md shadow-rose-500/20 border-b-4 border-rose-700 flex flex-col items-center justify-center gap-1 cursor-pointer select-none">
                 <div class="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="w-7 h-7 sm:w-8 sm:h-8 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                     <span class="text-xl sm:text-2xl font-black tracking-wide">錯誤</span>
                 </div>
-                <span class="text-[11px] sm:text-xs text-rose-100 font-medium">鍵盤 → 或 X / N</span>
+                <span class="text-[11px] font-medium text-rose-100 opacity-80 hidden sm:inline">鍵盤 → 或 X</span>
             </button>
         </div>
 
     </main>
 
-    <!-- 底部規則說明列 -->
-    <footer class="w-full max-w-2xl text-center text-xs text-slate-500 bg-white/70 rounded-xl py-2.5 px-4 border border-slate-200/60">
-        <span class="font-bold text-slate-700">計分規則：</span>
-        連續答對每次加分遞增（+10, +20, +30...）；答錯時連擊歸零；若連續答錯將開始遞增扣分（第1次錯不扣分，第2次連錯 -10，第3次連錯 -20...）。
+    <!-- 底部規則說明 -->
+    <footer class="w-full max-w-xl mx-auto px-4 py-3 text-center text-[11px] sm:text-xs text-slate-400">
+        規則：連續答對分數累加 (+10, +20, +30...)；答錯後重新從 +10 計算；連續答錯則遞增扣分 (-10, -20...)。
     </footer>
 
-    <!-- 限時模式結算彈窗 (取代 alert) -->
-    <div id="gameOverModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-8 shadow-2xl border border-slate-100 text-center transform transition-all">
-            <div class="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-4 text-3xl">
-                🏁
+    <!-- 限時模式結算視窗 -->
+    <div id="gameOverModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 sm:p-8 text-center shadow-2xl border border-slate-100 animate-pop">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-3xl mx-auto mb-4">
+                🏆
             </div>
             <h2 class="text-2xl font-black text-slate-800">時間到！挑戰結束</h2>
-            <p class="text-sm text-slate-500 mt-1">您在 60 秒快算挑戰中的成績如下</p>
-            
-            <div class="bg-slate-50 rounded-2xl p-4 my-5 border border-slate-200/80 grid grid-cols-2 gap-3">
+            <p class="text-sm text-slate-500 mt-1">您的 60 秒快算成績如下</p>
+
+            <div class="my-6 bg-slate-50 rounded-2xl p-4 border border-slate-200/70 grid grid-cols-2 gap-4">
                 <div>
-                    <div class="text-xs text-slate-400 font-medium">最終得分</div>
-                    <div id="finalScoreText" class="math-font text-3xl font-black text-indigo-600 mt-0.5">0</div>
+                    <div class="text-xs font-semibold text-slate-400">最終得分</div>
+                    <div id="finalScoreText" class="text-2xl font-black text-indigo-600 mt-0.5">0</div>
                 </div>
                 <div>
-                    <div class="text-xs text-slate-400 font-medium">最高連對</div>
-                    <div id="finalMaxStreakText" class="math-font text-3xl font-black text-emerald-600 mt-0.5">0</div>
+                    <div class="text-xs font-semibold text-slate-400">最高連對</div>
+                    <div id="finalMaxStreakText" class="text-2xl font-black text-emerald-600 mt-0.5">0</div>
                 </div>
             </div>
 
-            <button onclick="closeModalAndRestart()" class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-md shadow-indigo-500/20 transition cursor-pointer">
-                再挑戰一次
-            </button>
+            <div class="flex flex-col gap-2.5">
+                <button onclick="closeModalAndRestart()" class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-md shadow-indigo-500/20 transition cursor-pointer">
+                    再挑戰一次
+                </button>
+                <button onclick="switchToTrainingMode()" class="w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition cursor-pointer">
+                    切換至訓練模式
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清除最高紀錄確認視窗 -->
+    <div id="resetHighScoreModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xs w-full p-6 text-center shadow-2xl border border-slate-100 animate-pop">
+            <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-2xl mx-auto mb-3">
+                🗑️
+            </div>
+            <h3 class="text-lg font-black text-slate-800">清除限時最高紀錄？</h3>
+            <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">確定要將限時模式的歷史最高分歸零嗎？此動作無法復原。</p>
+
+            <div class="grid grid-cols-2 gap-2.5 mt-5">
+                <button onclick="closeResetHighScoreModal()" class="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition cursor-pointer">
+                    取消
+                </button>
+                <button onclick="confirmResetHighScore()" class="py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-sm transition cursor-pointer">
+                    確定清除
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        /**
-         * 數學快算判斷挑戰 - 核心遊戲邏輯
-         */
+        const HIGH_SCORE_STORAGE_KEY = 'math_judgment_game_high_score_v1';
+
+        // 從 localStorage 安全讀取最高分
+        function loadHighScore() {
+            try {
+                const saved = localStorage.getItem(HIGH_SCORE_STORAGE_KEY);
+                const parsed = parseInt(saved, 10);
+                return (!isNaN(parsed) && parsed > 0) ? parsed : 0;
+            } catch (e) {
+                return 0;
+            }
+        }
+
+        // 將最高分寫入 localStorage
+        function saveHighScore(newScore) {
+            try {
+                localStorage.setItem(HIGH_SCORE_STORAGE_KEY, String(newScore));
+            } catch (e) {
+                // 忽略無痕模式或瀏覽器儲存權限限制錯誤
+            }
+        }
 
         // 遊戲狀態變數
         const state = {
             score: 0,
-            highScore: parseInt(localStorage.getItem('math_judge_highscore') || '0', 10),
-            positiveStreak: 0,      // 連續答對次數
-            negativeStreak: 0,      // 連續答錯次數
-            maxPositiveStreak: 0,   // 單局最高連對
-            totalCorrect: 0,        // 累計答對題數（用於自動進階判斷）
-            selectedStage: 'auto',  // 'auto' | '1' | '2' | '3' | '4'
-            currentEquation: null,  // { html: string, isTrue: boolean, correctionText: string, stage: number }
-            isTimerMode: false,     // 是否開啟 60 秒倒數模式
+            highScore: loadHighScore(),
+            isNewRecordInSession: false, // 本局是否已打破歷史紀錄
+            positiveStreak: 0,           // 連續答對次數
+            negativeStreak: 0,           // 連續答錯次數
+            maxPositiveStreak: 0,        // 單局最高連對
+            totalCorrect: 0,             // 累計答對題數（用於自動進階判斷）
+            selectedStage: 'auto',       // 'auto' | '1' | '2' | '3' | '4'
+            currentEquation: null,       // { html: string, isTrue: boolean, correctionText: string, stage: number }
+            isTimerMode: false,          // false = 訓練模式(直接開始), true = 限時60秒模式(需點擊開始)
+            isTimerReady: false,         // 限時模式下是否處於「等待點擊開始」的待命狀態
             timeLeft: 60,
             timerInterval: null,
             isGameOver: false,
-            basePoints: 10          // 基礎分值單位
+            basePoints: 10               // 基礎分值單位
         };
 
         // DOM 元素快取
@@ -281,10 +341,18 @@
             scoreDisplay: document.getElementById('scoreDisplay'),
             streakCard: document.getElementById('streakCard'),
             streakDisplay: document.getElementById('streakDisplay'),
-            rightStatLabel: document.getElementById('rightStatLabel'),
-            rightStatValue: document.getElementById('rightStatValue'),
+            highScoreCard: document.getElementById('highScoreCard'),
+            highScoreTitle: document.getElementById('highScoreTitle'),
+            highScoreDisplay: document.getElementById('highScoreDisplay'),
+            highScoreModeNote: document.getElementById('highScoreModeNote'),
+            newRecordBadge: document.getElementById('newRecordBadge'),
+            timerBanner: document.getElementById('timerBanner'),
+            timerValueDisplay: document.getElementById('timerValueDisplay'),
             equationCard: document.getElementById('equationCard'),
             equationDisplay: document.getElementById('equationDisplay'),
+            timerStandbyOverlay: document.getElementById('timerStandbyOverlay'),
+            btnTrue: document.getElementById('btnTrue'),
+            btnFalse: document.getElementById('btnFalse'),
             currentLevelBadge: document.getElementById('currentLevelBadge'),
             nextRewardBadge: document.getElementById('nextRewardBadge'),
             nextPenaltyBadge: document.getElementById('nextPenaltyBadge'),
@@ -295,357 +363,327 @@
             timerModeText: document.getElementById('timerModeText'),
             gameOverModal: document.getElementById('gameOverModal'),
             finalScoreText: document.getElementById('finalScoreText'),
-            finalMaxStreakText: document.getElementById('finalMaxStreakText')
+            finalMaxStreakText: document.getElementById('finalMaxStreakText'),
+            resetHighScoreModal: document.getElementById('resetHighScoreModal')
         };
 
-        // 工具函式：隨機整數 [min, max]
-        function randInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
+        // 數學工具函式
+        const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const gcd = (a, b) => (b === 0 ? Math.abs(a) : gcd(b, a % b));
 
-        // 工具函式：最大公因數 (GCD)
-        function gcd(a, b) {
-            a = Math.abs(a);
-            b = Math.abs(b);
-            while (b !== 0) {
-                let t = b;
-                b = a % b;
-                a = t;
-            }
-            return a;
-        }
-
-        // 工具函式：產生分數 HTML 結構
+        // 產生分數 HTML 結構
         function formatFractionHTML(num, den) {
-            if (den === 1) return `${num}`;
+            if (den === 1) return `<span>${num}</span>`;
             return `<span class="fraction"><span class="num">${num}</span><span class="den">${den}</span></span>`;
         }
 
-        // 工具函式：產生純文字分數（用於答錯時的訂正提示）
-        function formatFractionText(num, den) {
-            if (den === 1) return `${num}`;
-            return `${num}/${den}`;
-        }
-
-        // 決定目前應該出哪個階段的題目
-        function resolveActiveStage() {
+        // 決定目前題目難度階段 (1~4)
+        function determineActiveStage() {
             if (state.selectedStage !== 'auto') {
                 return parseInt(state.selectedStage, 10);
             }
-            // 自動進階邏輯：依據累計答對題數與當前分數動態提升難度
-            if (state.totalCorrect < 5 && state.score < 100) return 1;      // 基礎加減乘除
-            if (state.totalCorrect < 12 && state.score < 350) return 2;     // 位數增加
-            if (state.totalCorrect < 20 && state.score < 700) return 3;     // 小數計算
-            return 4;                                                       // 分數計算（綜合高階）
+            // 自動進階邏輯：依據累計答對題數逐步解鎖更高難度
+            if (state.totalCorrect < 5) return 1;
+            if (state.totalCorrect < 12) return 2;
+            if (state.totalCorrect < 20) return 3;
+            // 20題之後混合出現 2、3、4 階段，並偏重小數與分數
+            const pool = [2, 3, 3, 4, 4, 4];
+            return pool[randInt(0, pool.length - 1)];
         }
 
         /**
-         * 題目生成器：涵蓋四個難度階段，並確保約 50% 為正確、50% 為具迷惑性的錯誤算式
+         * 核心題目生成器
+         * 確保生成的「錯誤題目」具有高度迷惑性（例如個位數相同、進位失誤、分母直接相加等常見錯誤）
          */
         function generateEquation() {
-            const stage = resolveActiveStage();
-            const isTrue = Math.random() < 0.5;
-            let eq = null;
+            const stage = determineActiveStage();
+            const isTrue = Math.random() < 0.5; // 50% 機率出正確算式，50% 出錯誤算式
+            let html = '';
+            let correctionText = '';
 
-            switch (stage) {
-                case 1:
-                    eq = generateStage1Basic(isTrue);
-                    break;
-                case 2:
-                    eq = generateStage2MultiDigit(isTrue);
-                    break;
-                case 3:
-                    eq = generateStage3Decimals(isTrue);
-                    break;
-                case 4:
-                    eq = generateStage4Fractions(isTrue);
-                    break;
-            }
-            eq.stage = stage;
-            return eq;
-        }
+            if (stage === 1) {
+                // 【階段 1：基礎個位數與簡單兩位數加減乘除】
+                const ops = ['+', '-', '×', '÷'];
+                const op = ops[randInt(0, 3)];
+                let a, b, ans, shownAns;
 
-        // 階段 1：基礎加減乘除 (個位數與二位數)
-        function generateStage1Basic(isTrue) {
-            const ops = ['+', '-', '×', '÷'];
-            const op = ops[randInt(0, 3)];
-            let a, b, ans, shownAns;
-
-            if (op === '+') {
-                a = randInt(3, 25);
-                b = randInt(2, 25);
-                ans = a + b;
-            } else if (op === '-') {
-                a = randInt(10, 35);
-                b = randInt(2, a - 1);
-                ans = a - b;
-            } else if (op === '×') {
-                a = randInt(2, 9);
-                b = randInt(2, 9);
-                ans = a * b;
-            } else {
-                b = randInt(2, 9);
-                ans = randInt(2, 9);
-                a = b * ans;
-            }
-
-            if (isTrue) {
-                shownAns = ans;
-            } else {
-                // 製造接近的錯誤（差 1、差 2 或進位錯誤）
-                const offsets = [-2, -1, 1, 2, 10];
-                let offset = offsets[randInt(0, offsets.length - 1)];
-                if (ans + offset < 0) offset = Math.abs(offset);
-                shownAns = ans + offset;
-            }
-
-            return {
-                html: `${a} ${op} ${b} = ${shownAns}`,
-                isTrue,
-                correctionText: `${a} ${op} ${b} = ${ans}`
-            };
-        }
-
-        // 階段 2：位數增加 (二位數至三位數加減乘除)
-        function generateStage2MultiDigit(isTrue) {
-            const ops = ['+', '-', '×', '÷'];
-            const op = ops[randInt(0, 3)];
-            let a, b, ans, shownAns;
-
-            if (op === '+') {
-                a = randInt(45, 280);
-                b = randInt(35, 250);
-                ans = a + b;
-            } else if (op === '-') {
-                a = randInt(120, 450);
-                b = randInt(35, a - 25);
-                ans = a - b;
-            } else if (op === '×') {
-                a = randInt(12, 28);
-                b = randInt(4, 12);
-                ans = a * b;
-            } else {
-                b = randInt(6, 15);
-                ans = randInt(11, 24);
-                a = b * ans;
-            }
-
-            if (isTrue) {
-                shownAns = ans;
-            } else {
-                // 常見多位數計算失誤：十位數進退位差 10、個位數差 1 或 2
-                const offsets = [-10, -2, -1, 1, 2, 10, 20];
-                let offset = offsets[randInt(0, offsets.length - 1)];
-                if (ans + offset <= 0) offset = 10;
-                shownAns = ans + offset;
-            }
-
-            return {
-                html: `${a} ${op} ${b} = ${shownAns}`,
-                isTrue,
-                correctionText: `${a} ${op} ${b} = ${ans}`
-            };
-        }
-
-        // 階段 3：小數計算 (精確處理浮點數誤差)
-        function generateStage3Decimals(isTrue) {
-            const ops = ['+', '-', '×'];
-            const op = ops[randInt(0, 2)];
-            let aInt, bInt, ans, shownAns, aStr, bStr;
-
-            if (op === '+' || op === '-') {
-                // 使用整數擴大 10 倍計算，徹底避免 JS 0.1 + 0.2 = 0.30000000000000004 問題
-                aInt = randInt(12, 98);
-                bInt = randInt(5, 85);
-                if (op === '-' && aInt <= bInt) {
-                    [aInt, bInt] = [bInt + randInt(5, 20), aInt];
-                }
-                const ansInt = op === '+' ? (aInt + bInt) : (aInt - bInt);
-                aStr = (aInt / 10).toFixed(1);
-                bStr = (bInt / 10).toFixed(1);
-                ans = Number((ansInt / 10).toFixed(1));
-
-                if (isTrue) {
-                    shownAns = ans.toFixed(1);
+                if (op === '+') {
+                    a = randInt(2, 19);
+                    b = randInt(2, 19);
+                    ans = a + b;
+                    const offsets = [-2, -1, 1, 2, 10];
+                    shownAns = isTrue ? ans : Math.max(1, ans + offsets[randInt(0, offsets.length - 1)]);
+                } else if (op === '-') {
+                    a = randInt(8, 25);
+                    b = randInt(1, a - 1);
+                    ans = a - b;
+                    const offsets = [-2, -1, 1, 2];
+                    shownAns = isTrue ? ans : Math.max(0, ans + offsets[randInt(0, offsets.length - 1)]);
+                } else if (op === '×') {
+                    a = randInt(2, 9);
+                    b = randInt(2, 9);
+                    ans = a * b;
+                    const offsets = [-a, a, -2, -1, 1, 2];
+                    shownAns = isTrue ? ans : Math.max(2, ans + offsets[randInt(0, offsets.length - 1)]);
                 } else {
-                    const offsets = [-1.0, -0.2, -0.1, 0.1, 0.2, 1.0];
-                    let wrong = Number((ans + offsets[randInt(0, offsets.length - 1)]).toFixed(1));
-                    if (wrong < 0) wrong = Number((ans + 0.2).toFixed(1));
-                    shownAns = wrong.toFixed(1);
+                    b = randInt(2, 9);
+                    ans = randInt(2, 9);
+                    a = b * ans;
+                    const offsets = [-2, -1, 1, 2];
+                    shownAns = isTrue ? ans : Math.max(1, ans + offsets[randInt(0, offsets.length - 1)]);
                 }
-            } else {
-                // 小數乘法：例如 0.4 × 0.6 = 0.24 或 1.5 × 0.4 = 0.6
-                aInt = randInt(2, 15);
-                bInt = randInt(2, 9);
-                const ansInt = aInt * bInt;
-                aStr = (aInt / 10).toFixed(1);
-                bStr = (bInt / 10).toFixed(1);
-                ans = Number((ansInt / 100).toFixed(2));
+                if (!isTrue && shownAns === ans) shownAns = ans + 1;
+                html = `${a} ${op} ${b} = ${shownAns}`;
+                correctionText = `${a} ${op} ${b} = ${ans}`;
 
-                if (isTrue) {
-                    shownAns = ans.toString();
+            } else if (stage === 2) {
+                // 【階段 2：多位數計算 (兩位數與三位數加減、二位數乘一位數)】
+                const ops = ['+', '-', '×'];
+                const op = ops[randInt(0, 2)];
+                let a, b, ans, shownAns;
+
+                if (op === '+') {
+                    a = randInt(25, 185);
+                    b = randInt(18, 145);
+                    ans = a + b;
+                    // 刻意製造進位錯誤 (+10, -10, +1, -1)
+                    const offsets = [-10, 10, -1, 1, -20, 20];
+                    shownAns = isTrue ? ans : ans + offsets[randInt(0, offsets.length - 1)];
+                } else if (op === '-') {
+                    a = randInt(65, 250);
+                    b = randInt(18, a - 12);
+                    ans = a - b;
+                    const offsets = [-10, 10, -1, 1, -2];
+                    shownAns = isTrue ? ans : Math.max(1, ans + offsets[randInt(0, offsets.length - 1)]);
                 } else {
-                    // 常見小數乘法錯誤：小數點點錯位（擴大10倍）或尾數差 0.02 / 0.1
-                    const mistakeType = randInt(0, 2);
-                    let wrong;
-                    if (mistakeType === 0) {
-                        wrong = Number((ans * 10).toFixed(1)); // 小數點忘記進兩位
-                    } else if (mistakeType === 1) {
-                        wrong = Number((ans + 0.1).toFixed(2));
+                    a = randInt(12, 34);
+                    b = randInt(3, 8);
+                    ans = a * b;
+                    const offsets = [-10, 10, -b, b, -2, 2];
+                    shownAns = isTrue ? ans : Math.max(10, ans + offsets[randInt(0, offsets.length - 1)]);
+                }
+                if (!isTrue && shownAns === ans) shownAns = ans + 10;
+                html = `${a} ${op} ${b} = ${shownAns}`;
+                correctionText = `${a} ${op} ${b} = ${ans}`;
+
+            } else if (stage === 3) {
+                // 【階段 3：小數計算 (精確處理浮點數避免 0.30000000004)】
+                const ops = ['+', '-', '×'];
+                const op = ops[randInt(0, 2)];
+                let aInt, bInt, ansVal, shownVal, aStr, bStr, ansStr, shownStr;
+
+                if (op === '+') {
+                    aInt = randInt(5, 48);   // 代表 0.5 ~ 4.8
+                    bInt = randInt(4, 39);   // 代表 0.4 ~ 3.9
+                    ansVal = (aInt + bInt) / 10;
+                    const offsets = [-1.0, 1.0, -0.1, 0.1, -0.2, 0.2];
+                    shownVal = isTrue ? ansVal : Math.max(0.1, +(ansVal + offsets[randInt(0, offsets.length - 1)]).toFixed(1));
+                    aStr = (aInt / 10).toFixed(1);
+                    bStr = (bInt / 10).toFixed(1);
+                    ansStr = ansVal.toFixed(1);
+                    shownStr = shownVal.toFixed(1);
+                } else if (op === '-') {
+                    aInt = randInt(25, 85);
+                    bInt = randInt(5, aInt - 3);
+                    ansVal = (aInt - bInt) / 10;
+                    const offsets = [-1.0, 1.0, -0.1, 0.1];
+                    shownVal = isTrue ? ansVal : Math.max(0.1, +(ansVal + offsets[randInt(0, offsets.length - 1)]).toFixed(1));
+                    aStr = (aInt / 10).toFixed(1);
+                    bStr = (bInt / 10).toFixed(1);
+                    ansStr = ansVal.toFixed(1);
+                    shownStr = shownVal.toFixed(1);
+                } else {
+                    // 小數乘法：例如 0.4 × 0.3 = 0.12 (常見錯誤是寫成 1.2)
+                    aInt = randInt(2, 9);
+                    bInt = randInt(2, 9);
+                    ansVal = (aInt * bInt) / 100;
+                    if (isTrue) {
+                        shownVal = ansVal;
                     } else {
-                        wrong = Number(Math.max(0.01, ans - 0.02).toFixed(2));
+                        // 經典小數點位數錯位干擾
+                        const traps = [
+                            +(ansVal * 10).toFixed(2),
+                            +((aInt * bInt + 2) / 100).toFixed(2),
+                            +Math.max(0.01, (aInt * bInt - 2) / 100).toFixed(2)
+                        ];
+                        shownVal = traps[randInt(0, traps.length - 1)];
                     }
-                    if (wrong === ans) wrong = Number((ans + 0.04).toFixed(2));
-                    shownAns = wrong.toString();
+                    aStr = (aInt / 10).toFixed(1);
+                    bStr = (bInt / 10).toFixed(1);
+                    ansStr = ansVal.toFixed(2);
+                    shownStr = shownVal.toFixed(2);
                 }
-            }
-
-            return {
-                html: `${aStr} ${op} ${bStr} = ${shownAns}`,
-                isTrue,
-                correctionText: `${aStr} ${op} ${bStr} = ${ans}`
-            };
-        }
-
-        // 階段 4：分數計算 (自動約分並以標準分數線呈現)
-        function generateStage4Fractions(isTrue) {
-            const dens = [2, 3, 4, 5, 6, 8];
-            const ops = ['+', '-', '×'];
-            const op = ops[randInt(0, 2)];
-
-            let d1 = dens[randInt(0, dens.length - 1)];
-            let d2 = dens[randInt(0, dens.length - 1)];
-            let n1 = randInt(1, d1 - 1);
-            let n2 = randInt(1, d2 - 1);
-
-            // 若為減法，確保結果為正數
-            if (op === '-' && (n1 / d1 <= n2 / d2)) {
-                [n1, d1, n2, d2] = [n2, d2, n1, d1];
-                if (n1 / d1 === n2 / d2) {
-                    n1 += 1;
+                if (!isTrue && shownStr === ansStr) {
+                    shownStr = (+ansStr + 0.1).toFixed(op === '×' ? 2 : 1);
                 }
-            }
+                html = `${aStr} ${op} ${bStr} = ${shownStr}`;
+                correctionText = `${aStr} ${op} ${bStr} = ${ansStr}`;
 
-            let rawNum, rawDen;
-            if (op === '+') {
-                rawNum = n1 * d2 + n2 * d1;
-                rawDen = d1 * d2;
-            } else if (op === '-') {
-                rawNum = n1 * d2 - n2 * d1;
-                rawDen = d1 * d2;
             } else {
-                rawNum = n1 * n2;
-                rawDen = d1 * d2;
-            }
+                // 【階段 4：分數計算 (同分母、簡易異分母加減與分數乘法)】
+                const mode = randInt(1, 3); // 1: 同分母加減, 2: 簡易異分母加法, 3: 分數乘法
+                let n1, d1, n2, d2, ansN, ansD, shownN, shownD, opSymbol;
 
-            const common = gcd(rawNum, rawDen);
-            const ansNum = rawNum / common;
-            const ansDen = rawDen / common;
+                if (mode === 1) {
+                    // 同分母加減
+                    const dens = [3, 4, 5, 6, 7, 8];
+                    d1 = d2 = dens[randInt(0, dens.length - 1)];
+                    const isAdd = Math.random() < 0.6;
+                    opSymbol = isAdd ? '+' : '-';
+                    if (isAdd) {
+                        n1 = randInt(1, d1 - 1);
+                        n2 = randInt(1, d1 - 1);
+                        ansN = n1 + n2;
+                        ansD = d1;
+                    } else {
+                        n1 = randInt(2, d1);
+                        n2 = randInt(1, n1 - 1);
+                        ansN = n1 - n2;
+                        ansD = d1;
+                    }
+                    const g = gcd(ansN, ansD);
+                    ansN /= g;
+                    ansD /= g;
 
-            let shownNum = ansNum;
-            let shownDen = ansDen;
+                    if (isTrue) {
+                        shownN = ansN;
+                        shownD = ansD;
+                    } else {
+                        // 常見錯誤：分子分母直接相加減，或分子差 1
+                        if (isAdd && Math.random() < 0.5) {
+                            shownN = n1 + n2;
+                            shownD = d1 + d2;
+                        } else {
+                            shownN = Math.max(1, ansN + (Math.random() < 0.5 ? 1 : -1));
+                            shownD = ansD;
+                        }
+                    }
+                } else if (mode === 2) {
+                    // 簡易異分母加法 (倍數關係分母，如 1/2 + 1/4 = 3/4)
+                    const pairs = [[2, 4], [2, 6], [3, 6], [2, 8], [4, 8], [3, 9]];
+                    const [smallD, bigD] = pairs[randInt(0, pairs.length - 1)];
+                    d1 = smallD;
+                    d2 = bigD;
+                    n1 = randInt(1, d1 - 1);
+                    n2 = randInt(1, d2 - 1);
+                    opSymbol = '+';
 
-            if (!isTrue) {
-                // 製造常見分數錯誤：分子分母直接相加、分子差 1、或分母錯誤
-                const errType = randInt(0, 2);
-                if (errType === 0 && op !== '×') {
-                    // 常見迷思：分子加分子、分母加分母
-                    const naiveNum = op === '+' ? (n1 + n2) : Math.max(1, Math.abs(n1 - n2));
-                    const naiveDen = d1 + d2;
-                    const g = gcd(naiveNum, naiveDen);
-                    shownNum = naiveNum / g;
-                    shownDen = naiveDen / g;
-                } else if (errType === 1) {
-                    shownNum = ansNum + (Math.random() < 0.5 ? 1 : -1);
-                    if (shownNum <= 0) shownNum = ansNum + 2;
-                    shownDen = ansDen;
+                    const rawN = n1 * (bigD / smallD) + n2;
+                    const g = gcd(rawN, bigD);
+                    ansN = rawN / g;
+                    ansD = bigD / g;
+
+                    if (isTrue) {
+                        shownN = ansN;
+                        shownD = ansD;
+                    } else {
+                        // 經典錯誤：分子加分子、分母加分母
+                        shownN = n1 + n2;
+                        shownD = d1 + d2;
+                    }
                 } else {
-                    shownNum = ansNum;
-                    shownDen = ansDen + (Math.random() < 0.5 ? 1 : 2);
+                    // 分數乘法
+                    d1 = randInt(2, 6);
+                    d2 = randInt(2, 6);
+                    n1 = randInt(1, d1 - 1);
+                    n2 = randInt(1, d2 - 1);
+                    opSymbol = '×';
+
+                    const rawN = n1 * n2;
+                    const rawD = d1 * d2;
+                    const g = gcd(rawN, rawD);
+                    ansN = rawN / g;
+                    ansD = rawD / g;
+
+                    if (isTrue) {
+                        shownN = ansN;
+                        shownD = ansD;
+                    } else {
+                        shownN = Math.max(1, ansN + 1);
+                        shownD = ansD === 1 ? 2 : ansD;
+                    }
                 }
 
-                // 確保錯誤答案確實不等於正確答案
-                if (shownNum * ansDen === ansNum * shownDen) {
-                    shownNum += 1;
+                // 避免誤生成剛好等值的錯誤答案
+                if (!isTrue && (shownN * ansD === ansN * shownD)) {
+                    shownN = ansN + 1;
+                    shownD = ansD;
                 }
+
+                html = `
+                    <span class="inline-flex items-center justify-center flex-wrap gap-1">
+                        ${formatFractionHTML(n1, d1)}
+                        <span>${opSymbol}</span>
+                        ${formatFractionHTML(n2, d2)}
+                        <span>=</span>
+                        ${formatFractionHTML(shownN, shownD)}
+                    </span>
+                `;
+                const ansText = ansD === 1 ? `${ansN}` : `${ansN}/${ansD}`;
+                correctionText = `${n1}/${d1} ${opSymbol} ${n2}/${d2} = ${ansText}`;
             }
 
-            const leftHTML = `${formatFractionHTML(n1, d1)} ${op} ${formatFractionHTML(n2, d2)}`;
-            const rightHTML = formatFractionHTML(shownNum, shownDen);
-
-            return {
-                html: `${leftHTML} = ${rightHTML}`,
-                isTrue,
-                correctionText: `${formatFractionText(n1, d1)} ${op} ${formatFractionText(n2, d2)} = ${formatFractionText(ansNum, ansDen)}`
-            };
-        }
-
-        /**
-         * 計算下一題答對與答錯的分數變化預告
-         */
-        function getNextScoreDeltas() {
-            // 答對獎勵：連對次數 + 1 乘以基礎分 (10, 20, 30...)
-            const nextGain = (state.positiveStreak + 1) * state.basePoints;
-
-            // 答錯懲罰：若目前正處於連對狀態或剛開始(negativeStreak === 0)，第一次答錯歸零(0分)；
-            // 若已經答錯過(negativeStreak >= 1)，連續答錯則扣分遞增 (-10, -20, -30...)
-            const nextPenalty = state.negativeStreak === 0 ? 0 : -(state.negativeStreak * state.basePoints);
-
-            return { nextGain, nextPenalty };
+            return { html, isTrue, correctionText, stage };
         }
 
         /**
          * 處理玩家點擊「正確 (O)」或「錯誤 (X)」
          */
         function handleAnswer(userChoice) {
-            if (state.isGameOver || !state.currentEquation) return;
+            if (state.isGameOver || state.isTimerReady || !state.currentEquation) return;
 
             const isCorrect = (userChoice === state.currentEquation.isTrue);
-            let delta = 0;
-
-            // 重置卡片動畫 class 以便重新觸發
-            el.equationCard.classList.remove('anim-correct', 'anim-wrong');
-            void el.equationCard.offsetWidth; // 強制 reflow
 
             if (isCorrect) {
-                // 答對邏輯：重置連錯、累加連對、計算遞增得分
-                state.negativeStreak = 0;
+                // 答對邏輯：連對次數 +1，連錯歸零
                 state.positiveStreak += 1;
+                state.negativeStreak = 0;
                 state.totalCorrect += 1;
                 if (state.positiveStreak > state.maxPositiveStreak) {
                     state.maxPositiveStreak = state.positiveStreak;
                 }
 
-                delta = state.positiveStreak * state.basePoints;
-                state.score += delta;
+                // 連續答對分數累加：第1次 +10，第2次 +20，第3次 +30...
+                const pointsEarned = state.positiveStreak * state.basePoints;
+                state.score += pointsEarned;
 
-                // 更新最高分紀錄
-                if (state.score > state.highScore) {
+                // 僅在「限時 60 秒」模式下檢查並更新歷史最高分
+                let brokeRecordNow = false;
+                if (state.isTimerMode && state.score > state.highScore) {
                     state.highScore = state.score;
-                    localStorage.setItem('math_judge_highscore', state.highScore.toString());
+                    saveHighScore(state.highScore);
+                    if (!state.isNewRecordInSession) {
+                        state.isNewRecordInSession = true;
+                        brokeRecordNow = true;
+                    }
                 }
 
-                el.equationCard.classList.add('anim-correct');
-                spawnFloatingScore(`+${delta}`, 'text-emerald-500');
-                showFeedbackHint('✓ 判斷正確！', 'text-emerald-600');
+                showFloatingText(
+                    brokeRecordNow ? `+${pointsEarned} 🏆` : `+${pointsEarned}`,
+                    brokeRecordNow ? 'text-amber-500' : 'text-emerald-600'
+                );
+                flashCardBorder('emerald');
+                el.feedbackHint.classList.add('opacity-0');
             } else {
                 // 答錯邏輯：
-                // 若原本在連對中，先斷掉連對，本次計為第 1 次錯誤（不扣分，下次答對從最低分 10 分重新累加）
-                // 若原本已經在連錯狀態（negativeStreak >= 1），則觸發連續答錯遞增扣分
+                // 1. 連對歸零 (下次答對重新從最低分 +10 開始)
+                // 2. 第 1 次答錯不扣分 (只重置連對)，第 2 次起連續答錯則遞增扣分 (-10, -20, -30...)
                 state.positiveStreak = 0;
                 state.negativeStreak += 1;
 
-                if (state.negativeStreak === 1) {
-                    delta = 0;
-                    spawnFloatingScore('連擊中斷 (0)', 'text-amber-500');
+                let penalty = 0;
+                if (state.negativeStreak >= 2) {
+                    penalty = (state.negativeStreak - 1) * state.basePoints;
+                    state.score -= penalty;
+                    showFloatingText(`-${penalty}`, 'text-rose-600');
                 } else {
-                    delta = -((state.negativeStreak - 1) * state.basePoints);
-                    state.score += delta;
-                    spawnFloatingScore(`${delta}`, 'text-rose-500');
+                    showFloatingText(`連擊中斷`, 'text-amber-600');
                 }
 
-                el.equationCard.classList.add('anim-wrong');
-                showFeedbackHint(`✗ 答錯了！正確算式為：${state.currentEquation.correctionText}`, 'text-rose-600');
+                flashCardBorder('rose');
+                // 顯示上一題的正確算式供玩家參考
+                el.feedbackHint.textContent = `❌ 正確應為：${state.currentEquation.correctionText}`;
+                el.feedbackHint.classList.remove('opacity-0');
             }
 
             // 產生下一題並更新畫面
@@ -653,162 +691,251 @@
             updateUI();
         }
 
-        // 在算式卡片上方產生浮動得分文字
-        function spawnFloatingScore(text, colorClass) {
-            const badge = document.createElement('div');
-            badge.className = `floating-score math-font text-2xl sm:text-3xl ${colorClass}`;
-            badge.textContent = text;
-            el.floatingContainer.appendChild(badge);
-            setTimeout(() => {
-                badge.remove();
-            }, 850);
+        // 浮動得分/扣分動畫
+        function showFloatingText(text, colorClass) {
+            const span = document.createElement('span');
+            span.textContent = text;
+            span.className = `animate-float-score font-black text-sm sm:text-base ${colorClass} block whitespace-nowrap`;
+            el.floatingContainer.innerHTML = '';
+            el.floatingContainer.appendChild(span);
         }
 
-        // 顯示上一題回饋提示
-        function showFeedbackHint(text, colorClass) {
-            el.feedbackHint.textContent = text;
-            el.feedbackHint.className = `h-6 mt-2 text-xs sm:text-sm font-bold text-center transition-opacity opacity-100 ${colorClass}`;
+        // 卡片答題反饋動畫
+        function flashCardBorder(color) {
+            el.equationCard.classList.remove('border-emerald-400', 'bg-emerald-50/30', 'border-rose-400', 'bg-rose-50/30', 'animate-shake');
+            void el.equationCard.offsetWidth; // 觸發 reflow 重啟動畫
+
+            if (color === 'emerald') {
+                el.equationCard.classList.add('border-emerald-400', 'bg-emerald-50/30');
+                setTimeout(() => {
+                    el.equationCard.classList.remove('border-emerald-400', 'bg-emerald-50/30');
+                }, 220);
+            } else {
+                el.equationCard.classList.add('border-rose-400', 'bg-rose-50/30', 'animate-shake');
+                setTimeout(() => {
+                    el.equationCard.classList.remove('border-rose-400', 'bg-rose-50/30');
+                }, 350);
+            }
         }
 
-        // 更新整體畫面 UI
+        // 更新所有 UI 顯示
         function updateUI() {
             // 1. 分數顯示
             el.scoreDisplay.textContent = state.score;
-            el.scoreDisplay.className = `math-font text-2xl sm:text-3xl font-extrabold mt-0.5 ${
+            el.scoreDisplay.className = `text-2xl sm:text-3xl font-black mt-0.5 tabular-nums ${
                 state.score < 0 ? 'text-rose-600' : 'text-slate-800'
             }`;
 
-            // 2. 連對 / 連錯狀態顯示
-            if (state.positiveStreak > 0) {
-                el.streakDisplay.textContent = `🔥 連對 x${state.positiveStreak}`;
-                el.streakDisplay.className = 'text-sm sm:text-base font-extrabold text-emerald-600 mt-1 text-center';
-                el.streakCard.className = 'bg-emerald-50/60 rounded-2xl p-3 sm:p-4 shadow-sm border border-emerald-200 flex flex-col items-center justify-center transition-colors';
-            } else if (state.negativeStreak >= 2) {
-                el.streakDisplay.textContent = `⚠️ 連錯 x${state.negativeStreak}`;
-                el.streakDisplay.className = 'text-sm sm:text-base font-extrabold text-rose-600 mt-1 text-center';
-                el.streakCard.className = 'bg-rose-50/70 rounded-2xl p-3 sm:p-4 shadow-sm border border-rose-200 flex flex-col items-center justify-center transition-colors';
-            } else if (state.negativeStreak === 1) {
-                el.streakDisplay.textContent = '連擊歸零';
-                el.streakDisplay.className = 'text-sm sm:text-base font-extrabold text-amber-600 mt-1 text-center';
-                el.streakCard.className = 'bg-amber-50/60 rounded-2xl p-3 sm:p-4 shadow-sm border border-amber-200 flex flex-col items-center justify-center transition-colors';
-            } else {
-                el.streakDisplay.textContent = '準備開始';
-                el.streakDisplay.className = 'text-sm sm:text-base font-extrabold text-slate-600 mt-1 text-center';
-                el.streakCard.className = 'bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-200/80 flex flex-col items-center justify-center transition-colors';
-            }
-
-            // 3. 右側欄位（最高分 或 剩餘秒數）
+            // 1.5 歷史最高分顯示（限時模式高亮參與紀錄，訓練模式保持柔和不計分）
+            el.highScoreDisplay.textContent = state.highScore;
             if (state.isTimerMode) {
-                el.rightStatLabel.textContent = '剩餘時間';
-                el.rightStatValue.textContent = `${state.timeLeft}s`;
-                el.rightStatValue.className = `math-font text-2xl sm:text-3xl font-extrabold mt-0.5 ${
-                    state.timeLeft <= 10 ? 'text-rose-600 animate-pulse' : 'text-indigo-600'
-                }`;
+                el.highScoreModeNote.classList.add('hidden');
+                if (state.isNewRecordInSession && state.highScore > 0) {
+                    el.highScoreCard.className = 'bg-amber-50/70 rounded-2xl p-3 sm:p-4 shadow-xs border border-amber-300 transition-all duration-300 relative overflow-hidden';
+                    el.highScoreTitle.className = 'text-[11px] sm:text-xs font-bold text-amber-700 uppercase tracking-wider';
+                    el.highScoreDisplay.className = 'text-2xl sm:text-3xl font-black text-amber-600 tabular-nums';
+                    el.newRecordBadge.classList.remove('hidden');
+                } else {
+                    el.highScoreCard.className = 'bg-white rounded-2xl p-3 sm:p-4 shadow-xs border border-amber-200/80 transition-all duration-300 relative overflow-hidden';
+                    el.highScoreTitle.className = 'text-[11px] sm:text-xs font-semibold text-amber-600/80 uppercase tracking-wider';
+                    el.highScoreDisplay.className = 'text-2xl sm:text-3xl font-black text-amber-600 tabular-nums';
+                    el.newRecordBadge.classList.add('hidden');
+                }
             } else {
-                el.rightStatLabel.textContent = '最高紀錄';
-                el.rightStatValue.textContent = state.highScore;
-                el.rightStatValue.className = 'math-font text-2xl sm:text-3xl font-extrabold text-amber-500 mt-0.5';
+                el.highScoreModeNote.classList.remove('hidden');
+                el.highScoreCard.className = 'bg-slate-50/80 rounded-2xl p-3 sm:p-4 shadow-xs border border-slate-200/80 transition-all duration-300 relative overflow-hidden';
+                el.highScoreTitle.className = 'text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider';
+                el.highScoreDisplay.className = 'text-2xl sm:text-3xl font-black text-slate-500 tabular-nums';
+                el.newRecordBadge.classList.add('hidden');
             }
 
-            // 4. 關卡徽章與獎懲預告
-            const stageNames = {
-                1: 'Lv.1 基礎加減乘除',
-                2: 'Lv.2 多位數進階',
-                3: 'Lv.3 小數精確運算',
-                4: 'Lv.4 分數約分挑戰'
-            };
-            const currentStage = state.currentEquation.stage;
-            const prefix = state.selectedStage === 'auto' ? '自動進階 · ' : '指定練習 · ';
-            el.currentLevelBadge.textContent = prefix + stageNames[currentStage];
+            // 2. 連擊與連錯卡片狀態
+            if (state.positiveStreak > 0) {
+                el.streakCard.className = 'bg-emerald-50/70 rounded-2xl p-3 sm:p-4 shadow-xs border border-emerald-200 transition-colors duration-200';
+                el.streakDisplay.innerHTML = `<span class="text-emerald-600">🔥 連對 ${state.positiveStreak} 題</span>`;
+            } else if (state.negativeStreak >= 2) {
+                el.streakCard.className = 'bg-rose-50/70 rounded-2xl p-3 sm:p-4 shadow-xs border border-rose-200 transition-colors duration-200';
+                el.streakDisplay.innerHTML = `<span class="text-rose-600">⚠️ 連錯 ${state.negativeStreak} 題</span>`;
+            } else if (state.negativeStreak === 1) {
+                el.streakCard.className = 'bg-amber-50/70 rounded-2xl p-3 sm:p-4 shadow-xs border border-amber-200 transition-colors duration-200';
+                el.streakDisplay.innerHTML = `<span class="text-amber-700">⚠️ 連擊歸零</span>`;
+            } else {
+                el.streakCard.className = 'bg-white rounded-2xl p-3 sm:p-4 shadow-xs border border-slate-200/80 transition-colors duration-200';
+                el.streakDisplay.innerHTML = `<span class="text-slate-500">準備開始</span>`;
+            }
 
-            const { nextGain, nextPenalty } = getNextScoreDeltas();
+            // 3. 下一題獎懲預告徽章
+            const nextGain = (state.positiveStreak + 1) * state.basePoints;
             el.nextRewardBadge.textContent = `答對 +${nextGain}`;
-            el.nextPenaltyBadge.textContent = nextPenalty === 0 ? '答錯歸零' : `答錯 ${nextPenalty}`;
 
-            // 5. 渲染當前算式 HTML
+            if (state.negativeStreak >= 1) {
+                const nextLoss = state.negativeStreak * state.basePoints;
+                el.nextPenaltyBadge.textContent = `再錯 -${nextLoss}`;
+            } else {
+                el.nextPenaltyBadge.textContent = `答錯歸零`;
+            }
+
+            // 4. 難度等級徽章
+            const stageNames = {
+                1: 'Lv.1 基礎四則',
+                2: 'Lv.2 多位數計算',
+                3: 'Lv.3 小數計算',
+                4: 'Lv.4 分數計算'
+            };
+            el.currentLevelBadge.textContent = stageNames[state.currentEquation.stage];
+
+            // 5. 渲染當前算式 HTML 與限時待命狀態控制
             el.equationDisplay.innerHTML = state.currentEquation.html;
+
+            if (state.isTimerMode && state.isTimerReady) {
+                el.timerStandbyOverlay.classList.remove('hidden');
+                el.btnTrue.disabled = true;
+                el.btnFalse.disabled = true;
+                el.btnTrue.classList.add('opacity-40', 'pointer-events-none');
+                el.btnFalse.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                el.timerStandbyOverlay.classList.add('hidden');
+                el.btnTrue.disabled = false;
+                el.btnFalse.disabled = false;
+                el.btnTrue.classList.remove('opacity-40', 'pointer-events-none');
+                el.btnFalse.classList.remove('opacity-40', 'pointer-events-none');
+            }
         }
 
-        // 切換難度標籤
-        function selectStage(stageKey) {
-            state.selectedStage = stageKey;
-            document.querySelectorAll('.stage-tab').forEach(btn => {
-                if (btn.dataset.stage === stageKey) {
-                    btn.className = 'stage-tab flex-1 min-w-[76px] py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-bold transition bg-indigo-600 text-white shadow-sm';
+        // 切換難度階段按鈕
+        function selectStage(stage) {
+            state.selectedStage = stage;
+            document.querySelectorAll('.stage-btn').forEach(btn => {
+                if (btn.dataset.stage === stage) {
+                    btn.className = 'stage-btn shrink-0 px-3 py-1 rounded-full text-xs font-bold bg-indigo-600 text-white shadow-xs transition cursor-pointer';
                 } else {
-                    btn.className = 'stage-tab flex-1 min-w-[76px] py-1.5 px-2.5 rounded-xl text-xs sm:text-sm font-bold transition text-slate-600 hover:bg-slate-100';
+                    btn.className = 'stage-btn shrink-0 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition cursor-pointer';
                 }
             });
             state.currentEquation = generateEquation();
             updateUI();
         }
 
-        // 切換「休閒無限時」與「限時 60 秒挑戰」
+        // 切換「訓練模式 (無限時)」與「限時 60 秒挑戰」
         function toggleTimerMode() {
             state.isTimerMode = !state.isTimerMode;
             if (state.isTimerMode) {
                 el.timerIcon.textContent = '🔥';
                 el.timerModeText.textContent = '限時 60 秒';
-                el.timerToggleBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100';
+                el.timerToggleBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 cursor-pointer';
+                resetGame();
             } else {
                 el.timerIcon.textContent = '⏱️';
-                el.timerModeText.textContent = '休閒無限時';
-                el.timerToggleBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+                el.timerModeText.textContent = '訓練模式 (無限時)';
+                el.timerToggleBtn.className = 'px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 cursor-pointer';
+                resetGame();
             }
-            resetGame();
         }
 
-        // 啟動計時器
+        // 啟動 60 秒倒數計時器
         function startTimer() {
             clearInterval(state.timerInterval);
-            if (!state.isTimerMode) return;
-
             state.timeLeft = 60;
+            el.timerBanner.classList.remove('hidden');
+            el.timerValueDisplay.textContent = `${state.timeLeft}s`;
+            el.timerValueDisplay.classList.remove('text-rose-600');
+
             state.timerInterval = setInterval(() => {
                 state.timeLeft -= 1;
-                updateUI();
+                el.timerValueDisplay.textContent = `${state.timeLeft}s`;
+                if (state.timeLeft <= 10) {
+                    el.timerValueDisplay.classList.add('text-rose-600');
+                }
                 if (state.timeLeft <= 0) {
+                    clearInterval(state.timerInterval);
                     endTimedGame();
                 }
             }, 1000);
         }
 
-        // 結束限時遊戲並顯示結算視窗
+        // 結束限時模式並顯示結算彈窗
         function endTimedGame() {
-            clearInterval(state.timerInterval);
             state.isGameOver = true;
             el.finalScoreText.textContent = state.score;
-            el.finalMaxStreakText.textContent = `x${state.maxPositiveStreak}`;
+            el.finalMaxStreakText.textContent = state.maxPositiveStreak;
             el.gameOverModal.classList.remove('hidden');
             el.gameOverModal.classList.add('flex');
         }
 
+        // 關閉結算視窗並再挑戰一次（回到限時模式待命畫面）
         function closeModalAndRestart() {
             el.gameOverModal.classList.add('hidden');
             el.gameOverModal.classList.remove('flex');
             resetGame();
         }
 
-        // 重置遊戲狀態
+        // 從結算視窗切換為訓練模式（直接開始練習，無需等待）
+        function switchToTrainingMode() {
+            el.gameOverModal.classList.add('hidden');
+            el.gameOverModal.classList.remove('flex');
+            if (state.isTimerMode) {
+                toggleTimerMode();
+            } else {
+                resetGame();
+            }
+        }
+
+        // 限時模式中點擊「開始挑戰」按鈕：揭曉題目並啟動 60 秒倒數
+        function startTimedSession() {
+            state.isTimerReady = false;
+            state.currentEquation = generateEquation();
+            startTimer();
+            updateUI();
+        }
+
+        // 打開清除最高紀錄確認視窗
+        function openResetHighScoreModal() {
+            el.resetHighScoreModal.classList.remove('hidden');
+            el.resetHighScoreModal.classList.add('flex');
+        }
+
+        // 關閉清除最高紀錄確認視窗
+        function closeResetHighScoreModal() {
+            el.resetHighScoreModal.classList.add('hidden');
+            el.resetHighScoreModal.classList.remove('flex');
+        }
+
+        // 確認清除最高紀錄
+        function confirmResetHighScore() {
+            state.highScore = 0;
+            state.isNewRecordInSession = false;
+            saveHighScore(0);
+            closeResetHighScoreModal();
+            updateUI();
+        }
+
+        // 重置遊戲狀態（限時模式會先進入待命畫面等待點擊開始；訓練模式則直接開始）
         function resetGame() {
             clearInterval(state.timerInterval);
             state.score = 0;
+            state.isNewRecordInSession = false;
             state.positiveStreak = 0;
             state.negativeStreak = 0;
             state.maxPositiveStreak = 0;
             state.totalCorrect = 0;
             state.isGameOver = false;
+            state.isTimerReady = state.isTimerMode;
             el.feedbackHint.classList.add('opacity-0');
             state.currentEquation = generateEquation();
             if (state.isTimerMode) {
-                startTimer();
+                state.timeLeft = 60;
+                el.timerBanner.classList.remove('hidden');
+                el.timerValueDisplay.textContent = '60s';
+                el.timerValueDisplay.classList.remove('text-rose-600');
+            } else {
+                el.timerBanner.classList.add('hidden');
             }
             updateUI();
         }
 
         // 鍵盤快捷鍵支援 (左方向鍵/O/Y 為正確，右方向鍵/X/N 為錯誤)
         window.addEventListener('keydown', (e) => {
-            if (state.isGameOver) return;
+            if (state.isGameOver || state.isTimerReady || !el.resetHighScoreModal.classList.contains('hidden')) return;
             const key = e.key.toLowerCase();
             if (e.key === 'ArrowLeft' || key === 'o' || key === 'y') {
                 e.preventDefault();
